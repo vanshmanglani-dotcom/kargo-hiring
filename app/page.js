@@ -22,6 +22,7 @@ export default function Dashboard() {
   const [busy, setBusy] = useState(false);
   const [log, setLog] = useState([]);
   const [loadErr, setLoadErr] = useState('');
+  const [folder, setFolder] = useState('');
 
   const say = (m) => setLog((l) => [...l, m]);
   const load = useCallback(async () => {
@@ -50,13 +51,34 @@ export default function Dashboard() {
       say(`↑ ${f.name} (${role})`);
       try {
         const r = await fetch('/api/upload', { method: 'POST', body: fd }).then(async (x) => { const j = await x.json(); if (!x.ok) throw new Error(j.error); return j; });
-        say(`  ✓ ${r.name} — PM ${r.PM} · SPM ${r.SPM}`); ok++;
+        if (r.skipped) say(`  · already imported`); else { say(`  ✓ ${r.name} (${r.role}) — PM ${r.PM} · SPM ${r.SPM}`); ok++; }
       } catch (e) { say(`  ✗ ${e.message}`); }
     }
     await load();
     if (ok) { try { await draftLoop(); } catch (e) { say(`✗ ${e.message}`); } }
     setFiles([]); setBusy(false);
     const input = document.getElementById('cvs'); if (input) input.value = '';
+  }
+
+  async function importDrive() {
+    if (!folder.trim()) return;
+    setBusy(true); setLog([]);
+    let ok = 0;
+    try {
+      const files = await api(`/api/drive?folder=${encodeURIComponent(folder)}`);
+      say(`Found ${files.length} CVs in the folder.`);
+      for (const f of files) {
+        try {
+          const r = await api('/api/upload', { driveId: f.id, filename: f.name, role });
+          if (r.skipped) say(`  · ${f.name} already imported`);
+          else { say(`  ✓ ${r.name} (${r.role}) — PM ${r.PM} · SPM ${r.SPM}`); ok++; }
+        } catch (e) { say(`  ✗ ${f.name}: ${e.message}`); }
+        if (ok && ok % 10 === 0) await load();
+      }
+      await load();
+      await draftLoop();
+    } catch (e) { say(`✗ ${e.message}`); }
+    setBusy(false);
   }
 
   const list = useMemo(() => rows
@@ -79,10 +101,16 @@ export default function Dashboard() {
           <select value={role} onChange={(e) => setRole(e.target.value)} disabled={busy}>
             <option value="PM">Applied for: Product Manager</option>
             <option value="SPM">Applied for: Senior Product Manager</option>
+            <option value="AUTO">Applied for: Auto-detect (filename pm_/spm_, else 5+ yrs = SPM)</option>
           </select>
           <input id="cvs" type="file" multiple accept=".pdf,.docx,.txt" onChange={(e) => setFiles([...e.target.files])} disabled={busy} />
           <button className="primary" onClick={upload} disabled={busy || !files.length}>{busy ? 'Working…' : `Score ${files.length || ''} CV${files.length === 1 ? '' : 's'}`}</button>
           <button onClick={async () => { setBusy(true); setLog([]); try { await draftLoop(); } catch (e) { say(`✗ ${e.message}`); } setBusy(false); }} disabled={busy}>Refresh drafts</button>
+        </div>
+        <div className="row" style={{ marginTop: 10 }}>
+          <strong>or import a Drive folder</strong>
+          <input type="text" placeholder="https://drive.google.com/drive/folders/…" value={folder} onChange={(e) => setFolder(e.target.value)} disabled={busy} style={{ flex: 1, minWidth: 260 }} />
+          <button className="primary" onClick={importDrive} disabled={busy || !folder.trim()}>Import &amp; score</button>
         </div>
         <p className="note">Name, email and phone are separated on our server and never sent to the AI. Every CV is scored against both PM and SPM rubrics.</p>
         {log.length > 0 && <div className="log">{log.join('\n')}</div>}
