@@ -7,23 +7,45 @@ import { scoreCandidate } from '@/lib/pipeline';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
+// Role from filename hints like "pm_03_..." / "spm_16_..." when the founder chose Auto-detect.
+function roleHint(name) {
+  if (/(^|[^a-z])spm[_\-\s]/i.test(name)) return 'SPM';
+  if (/(^|[^a-z])pm[_\-\s]/i.test(name)) return 'PM';
+  return null;
+}
+
+async function readInput(req) {
+  if ((req.headers.get('content-type') || '').includes('application/json')) {
+    const { driveId, filename, role, name } = await req.json();
+    if (!driveId) throw new Error('No driveId');
+    const res = await fetch(`https://drive.usercontent.google.com/download?id=${encodeURIComponent(driveId)}&export=download&confirm=t`);
+    if (!res.ok) throw new Error(`Drive download failed (${res.status}) — is the file shared publicly?`);
+    const file = new File([await res.arrayBuffer()], filename || `${driveId}.pdf`, { type: res.headers.get('content-type') || '' });
+    return { file, role, nameOverride: name || '' };
+  }
+  const form = await req.formData();
+  const file = form.get('file');
+  if (!file || typeof file === 'string') throw new Error('No file');
+  return { file, role: form.get('role'), nameOverride: form.get('name') || '' };
+}
+
 export async function POST(req) {
   try {
-    const form = await req.formData();
-    const file = form.get('file');
-    const role = form.get('role');
-    const nameOverride = form.get('name') || '';
-    if (!file || typeof file === 'string') return NextResponse.json({ error: 'No file' }, { status: 400 });
-    if (!['PM', 'SPM'].includes(role)) return NextResponse.json({ error: 'Role must be PM or SPM' }, { status: 400 });
+    const { file, role: chosen, nameOverride } = await readInput(req);
+    if (!['PM', 'SPM', 'AUTO'].includes(chosen)) throw new Error('Role must be PM, SPM or AUTO');
+
+    const { data: dup } = await db().from('candidates').select('id').eq('source_filename', file.name).limit(1);
+    if (dup?.length) return NextResponse.json({ skipped: true, name: file.name });
 
     // 1. Read the CV and split personal details from content (no AI)
     const raw = await fileToText(file);
     if (!raw || raw.trim().length < 50) throw new Error('Could not read text from this file (scanned image?)');
     const { pii, content } = splitPII(raw, file.name, nameOverride);
 
-    // 2. Store: content and PII in separate tables
+    // 2. Store content and PII in separate tables
+    let role = chosen === 'AUTO' ? roleHint(file.name) : chosen;
     const { data: cand, error } = await db().from('candidates')
-      .insert({ applied_role: role, source_filename: file.name, cv_content: content })
+      .insert({ applied_role: role || 'PM', source_filename: file.name, cv_content: content })
       .select().single();
     if (error) throw error;
     const { error: piiErr } = await db().from('candidate_pii').insert({ candidate_id: cand.id, ...pii });
@@ -33,10 +55,12 @@ export async function POST(req) {
     try {
       const rubric = await getRubric();
       const scores = await scoreCandidate(content, rubric);
+      // Auto-detect without a filename hint: JD bands — PM 2–4 yrs, SPM 5–8 yrs.
+      if (!role) role = scores.years >= 5 ? 'SPM' : 'PM';
       await db().from('candidates').update({
-        scores, pm_score: scores.PM.total, spm_score: scores.SPM.total, status: 'scored', error: null,
+        applied_role: role, scores, pm_score: scores.PM.total, spm_score: scores.SPM.total, status: 'scored', error: null,
       }).eq('id', cand.id);
-      return NextResponse.json({ id: cand.id, name: pii.name, PM: scores.PM.total, SPM: scores.SPM.total });
+      return NextResponse.json({ id: cand.id, name: pii.name, role, PM: scores.PM.total, SPM: scores.SPM.total });
     } catch (e) {
       await db().from('candidates').update({ status: 'error', error: String(e.message || e).slice(0, 500) }).eq('id', cand.id);
       throw e;
