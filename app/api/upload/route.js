@@ -34,8 +34,9 @@ export async function POST(req) {
     const { file, role: chosen, nameOverride } = await readInput(req);
     if (!['PM', 'SPM', 'AUTO'].includes(chosen)) throw new Error('Role must be PM, SPM or AUTO');
 
-    const { data: dup } = await db().from('candidates').select('id').eq('source_filename', file.name).limit(1);
-    if (dup?.length) return NextResponse.json({ skipped: true, name: file.name });
+    const { data: dup } = await db().from('candidates').select('id, status').eq('source_filename', file.name);
+    if (dup?.some((d) => d.status !== 'error')) return NextResponse.json({ skipped: true, name: file.name });
+    if (dup?.length) await db().from('candidates').delete().in('id', dup.map((d) => d.id)); // re-try failed imports
 
     // 1. Read the CV and split personal details from content (no AI)
     const raw = await fileToText(file);
