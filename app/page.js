@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, useCallback } from 'react';
 
 const ROLES = { PM: 'Product Manager', SPM: 'Senior Product Manager' };
 const SHORTLIST = 5;
+const DEMO_FOLDER = 'https://drive.google.com/drive/folders/1HrWXNvjhpKkZTnzurTHC06Cf1BYxKDoq';
 const first = (n) => (n || '').split(' ')[0];
 const fill = (s, n) => (s || '').replaceAll('[NAME]', first(n));
 
@@ -22,13 +23,14 @@ export default function Dashboard() {
   const [busy, setBusy] = useState(false);
   const [log, setLog] = useState([]);
   const [loadErr, setLoadErr] = useState('');
-  const [folder, setFolder] = useState('');
+  const [folder, setFolder] = useState(DEMO_FOLDER);
+  const [mode, setMode] = useState(null);
 
   const say = (m) => setLog((l) => [...l, m]);
   const load = useCallback(async () => {
     try { setRows(await api('/api/candidates')); setLoadErr(''); } catch (e) { setLoadErr(e.message); }
   }, []);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); api('/api/status').then(setMode).catch(() => {}); }, [load]);
 
   async function draftLoop() {
     say('Ranking + writing briefs and emails…');
@@ -60,16 +62,16 @@ export default function Dashboard() {
     const input = document.getElementById('cvs'); if (input) input.value = '';
   }
 
-  async function importDrive() {
-    if (!folder.trim()) return;
+  async function importDrive(src = folder, asRole = role) {
+    if (!src.trim()) return;
     setBusy(true); setLog([]);
     let ok = 0;
     try {
-      const files = await api(`/api/drive?folder=${encodeURIComponent(folder)}`);
+      const files = await api(`/api/drive?folder=${encodeURIComponent(src)}`);
       say(`Found ${files.length} CVs in the folder.`);
       for (const f of files) {
         try {
-          const r = await api('/api/upload', { driveId: f.id, filename: f.name, role });
+          const r = await api('/api/upload', { driveId: f.id, filename: f.name, role: asRole });
           if (r.skipped) say(`  · ${f.name} already imported`);
           else { say(`  ✓ ${r.name} (${r.role}) — PM ${r.PM} · SPM ${r.SPM}`); ok++; }
         } catch (e) { say(`  ✗ ${f.name}: ${e.message}`); }
@@ -79,6 +81,18 @@ export default function Dashboard() {
       await draftLoop();
     } catch (e) { say(`✗ ${e.message}`); }
     setBusy(false);
+  }
+
+  async function rescoreAll() {
+    if (!confirm(`Re-score all ${rows.length} candidates with the current engine? Sent emails are kept.`)) return;
+    setBusy(true); setLog([]);
+    let n = 0;
+    for (const c of rows) {
+      try { await api('/api/decision', { id: c.id, action: 'rescore' }); n++; if (n % 10 === 0) say(`  re-scored ${n}/${rows.length}`); }
+      catch (e) { say(`  ✗ ${c.name}: ${e.message}`); }
+    }
+    say(`Re-scored ${n}.`);
+    await load(); await draftLoop(); setBusy(false);
   }
 
   const list = useMemo(() => rows
@@ -95,6 +109,21 @@ export default function Dashboard() {
       <h1>Kargo Hiring</h1>
       <p className="sub">Ranked against the pattern of Kargo&apos;s best hires. The system recommends — you decide. Nothing is sent until you click Send.</p>
 
+      {mode && (mode.ai === 'demo' || mode.email === 'demo') && (
+        <div className="banner">
+          <span className="dot" />
+          <div>
+            <b>Demo mode.</b>{' '}
+            {mode.ai === 'demo' ? 'Scoring, briefs and emails use the built-in rule-based engine (no AI key). ' : `Scoring uses ${mode.ai === 'gemini' ? 'Gemini' : 'Vercel AI Gateway'}. `}
+            {mode.email === 'demo' ? 'Send marks emails as sent without delivering them. ' : 'Emails are delivered via Resend. '}
+            Add <code>GEMINI_API_KEY</code> / <code>RESEND_API_KEY</code> in Vercel to go live.
+          </div>
+          {rows.length === 0
+            ? <button className="primary" onClick={() => importDrive(DEMO_FOLDER, 'AUTO')} disabled={busy}>Load 60 demo CVs</button>
+            : <button onClick={rescoreAll} disabled={busy}>Re-score all</button>}
+        </div>
+      )}
+
       <div className="panel">
         <div className="row">
           <strong>Upload CVs</strong>
@@ -110,7 +139,7 @@ export default function Dashboard() {
         <div className="row" style={{ marginTop: 10 }}>
           <strong>or import a Drive folder</strong>
           <input type="text" placeholder="https://drive.google.com/drive/folders/…" value={folder} onChange={(e) => setFolder(e.target.value)} disabled={busy} style={{ flex: 1, minWidth: 260 }} />
-          <button className="primary" onClick={importDrive} disabled={busy || !folder.trim()}>Import &amp; score</button>
+          <button className="primary" onClick={() => importDrive()} disabled={busy || !folder.trim()}>Import &amp; score</button>
         </div>
         <p className="note">Name, email and phone are separated on our server and never sent to the AI. Every CV is scored against both PM and SPM rubrics.</p>
         {log.length > 0 && <div className="log">{log.join('\n')}</div>}
@@ -152,7 +181,7 @@ function Candidate({ c, rank, tab, line, open, toggle, reload }) {
     setWorking(false);
   }
   const dirty = subj !== (c.email_subject || '') || body !== (c.email_body || '');
-  const send = () => act(async () => { const r = await api('/api/send', { id: c.id, subject: subj, body }); setMsg(`✓ Sent to ${r.to}`); });
+  const send = () => act(async () => { const r = await api('/api/send', { id: c.id, subject: subj, body }); setMsg(r.demo ? `✓ Demo: marked as sent to ${r.to} (not emailed)` : `✓ Sent to ${r.to}`); });
   const flip = (to) => act(async () => { await api('/api/decision', { id: c.id, action: to }); await api('/api/recompute', {}); }, `Switched to ${to}. New draft written.`);
 
   return (

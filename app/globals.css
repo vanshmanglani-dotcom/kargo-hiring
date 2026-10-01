@@ -48,6 +48,15 @@ h1 {
   border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 20px;
   box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 30px rgba(0,0,0,0.35);
 }
+.banner {
+  display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap;
+  border: 1px solid rgba(242, 201, 76, 0.25); background: rgba(242, 201, 76, 0.06);
+  color: var(--ink-2); border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; font-size: 13px;
+}
+.banner > div { flex: 1; min-width: 240px; }
+.banner b { color: var(--warn); font-weight: 600; }
+.banner code { font: 12px "JetBrains Mono", ui-monospace, monospace; background: rgba(255,255,255,0.06); padding: 1px 5px; border-radius: 4px; color: var(--ink); }
+.banner .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warn); box-shadow: 0 0 10px var(--warn); flex: none; }
 .panel strong { font-weight: 500; color: var(--ink-2); font-size: 13px; }
 .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 
