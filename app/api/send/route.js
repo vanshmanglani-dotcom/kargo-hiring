@@ -10,7 +10,6 @@ export async function POST(req) {
   try {
     const { id, subject, body } = await req.json();
     const key = process.env.RESEND_API_KEY;
-    if (!key) throw new Error('RESEND_API_KEY not set — add it in Vercel → Settings → Environment Variables and redeploy');
 
     const { data: c, error } = await db().from('candidates').select('*, candidate_pii(name, email)').eq('id', id).single();
     if (error) throw error;
@@ -21,6 +20,15 @@ export async function POST(req) {
     const subj = fill(subject ?? c.email_subject, p.name);
     const text = fill(body ?? c.email_body, p.name);
     if (!subj || !text) throw new Error('Draft is empty');
+
+    // Demo mode: no Resend key → record the send without emailing anyone.
+    if (!key) {
+      await db().from('candidates').update({
+        status: 'sent', sent_at: new Date().toISOString(), resend_id: 'demo-not-emailed',
+        email_subject: subject ?? c.email_subject, email_body: body ?? c.email_body,
+      }).eq('id', id);
+      return NextResponse.json({ ok: true, to: p.email, demo: true });
+    }
 
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
