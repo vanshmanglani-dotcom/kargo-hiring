@@ -14,11 +14,13 @@ export async function POST(req) {
       await t.update({ decision: action, decision_source: 'founder' }).eq('id', id).neq('status', 'sent');
     } else if (action === 'save') {
       await t.update({ email_subject: subject, email_body: body }).eq('id', id);
-    } else if (action === 'retry') {
+    } else if (action === 'retry' || action === 'rescore') {
       const { data: c } = await t.select('*').eq('id', id).single();
-      if (!c.scores) {
+      if (!c.scores || action === 'rescore') {
         const scores = await scoreCandidate(c.cv_content, await getRubric());
-        await db().from('candidates').update({ scores, pm_score: scores.PM.total, spm_score: scores.SPM.total, status: 'scored', error: null, draft_for: null }).eq('id', id);
+        const upd = { scores, pm_score: scores.PM.total, spm_score: scores.SPM.total, error: null };
+        if (c.status !== 'sent') Object.assign(upd, { status: 'scored', draft_for: null });
+        await db().from('candidates').update(upd).eq('id', id);
       } else {
         await db().from('candidates').update({ status: 'scored', error: null, draft_for: null }).eq('id', id);
       }
