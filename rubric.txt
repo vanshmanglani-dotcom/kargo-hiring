@@ -1,0 +1,83 @@
+KARGO HIRING RUBRIC — PRODUCT MANAGER (PM) and SENIOR PRODUCT MANAGER (SPM)
+Source: patterns from Kargo's 8 past hires, NOT from the job descriptions.
+
+PATTERNS FOUND (Exceeds vs Meets/Below)
+Exceeds: Rohan Desai, Sunita Krishnamurthy, Aditya Shetty, Meghna Tiwari, Lavanya Iyer
+Meets/Below: Vikram Nair, Rahul Bose, Preetham Rao
+
+1. Hands-on time inside operations before the current role.
+   Every "Exceeds" hire did the operational work themselves before building for it: Rohan ran 180+
+   shipments/month of documentation at a CHA firm at JNPT; Sunita handled 200+ shipments/month of
+   B/L and customs paperwork; Aditya handled berth and detention escalations at a port terminal;
+   Meghna prepared LC document sets at a freight forwarder; Lavanya ran carrier allocation for 800+
+   shipments/month at a 3PL. Vikram (HR-tech PM), Rahul (fintech marketing) and Preetham (e-commerce
+   backend, integrated 3PLs only through APIs) never worked inside the operation.
+
+2. Spotted a broken process nobody assigned them, built a fix themselves, and it got adopted.
+   Rohan built an Excel tracker adopted by a 12-person team in two weeks, and a B/L verification
+   prototype over a weekend used by 30 colleagues in a month. Sunita redesigned her team's intake
+   workflow over a weekend when a vendor changed formats; it was kept permanently. Lavanya built a
+   visibility dashboard that 2 other regional teams adopted. Meghna's onboarding checklist became the
+   team standard. Vikram's comparable items (PRD template, roadmap presentations) were part of his
+   assigned job, not self-started.
+
+3. Owns failure in writing: kills, losses and post-mortems with a documented lesson.
+   Lavanya killed 2 features on usage data and wrote the outage post-mortem. Aditya wrote up a
+   4-month lost deal (wrong economic buyer) and it became standard practice. Meghna wrote the bug
+   report for an undocumented limitation and ran the 6-week fix. Rohan found the vendor reliability
+   problem himself and led the migration. The Meets/Below CVs list only wins.
+
+(Supporting signal across Exceeds hires: making the call alone with no layer above — "without a
+product layer" (Rohan), "no account manager layer" (Aditya), "no escalation to management in 14
+months" (Meghna), "sole PM", "she doesn't hedge" (Lavanya) — and solving crises under time pressure
+— Meghna's overnight customs hold, Sunita's weekend redesign, Rohan's same-day fix.)
+
+SCORING: each criterion scored 1–5. Weighted total = sum(weight × score / 5), out of 100.
+
+====================================================================
+PM RUBRIC
+====================================================================
+
+Criterion name: Ground-level operations exposure
+What a strong candidate looks like: Has personally done operational work (shipment documentation, carrier coordination, dispatch, warehouse, customs, field ops or similar ops-heavy work) for 1+ years as a doer, not as a consultant or software builder. 5 = held an ops role in logistics/freight/supply chain handling real volume (numbers given). 3 = ops-heavy work in another industry, or worked on-site with operators for long stretches. 1 = only desk-side exposure (user interviews, APIs, analytics) or none.
+Weight: 25%
+
+Criterion name: Self-started fix that got adopted
+What a strong candidate looks like: The CV shows at least one problem they noticed without being asked, a fix they built themselves (tool, sheet, prototype, process), and evidence others adopted it (team size, time to adoption, kept permanently). 5 = two or more such cases with adoption numbers. 3 = one case, or initiative with no evidence of adoption. 1 = only work that was clearly assigned (shipped roadmap features, wrote requested docs).
+Weight: 25%
+
+Criterion name: Kills and owns failures in writing
+What a strong candidate looks like: Names something they killed, lost, or broke, what they learned, and what changed because of it (feature killed on data, post-mortem written, lost-deal analysis shared, bug escalated and owned). 5 = specific failure + written learning + changed practice. 3 = mentions iterating or pivoting without specifics. 1 = CV lists only wins.
+Weight: 20%
+
+Criterion name: Owns calls without a layer above
+What a strong candidate looks like: Has been the sole or final decision-maker for a product area, account, or process — no senior PM, manager, or committee making the call. 5 = explicitly sole owner with outcomes attributed to their decisions. 3 = owned features end-to-end inside a team with senior PMs above. 1 = supported others' decisions.
+Weight: 15%
+
+Criterion name: Fixes under pressure
+What a strong candidate looks like: Describes a specific time-boxed crisis (outage, customs hold, vendor change, data loss risk, deadline) that they personally resolved, with the outcome. 5 = specific incident, their action, and a measurable result within hours/days. 3 = general on-call or escalation duty. 1 = no evidence.
+Weight: 15%
+
+====================================================================
+SPM RUBRIC (higher bar, especially on independent operation)
+====================================================================
+
+Criterion name: Ground-level operations exposure
+What a strong candidate looks like: Same as PM, but 5 requires 2+ years inside logistics/freight/supply-chain operations OR deep on-the-ground work with operators on integrations (carrier systems, port portals, ERPs). 3 = ops exposure in an adjacent industry. 1 = none.
+Weight: 20%
+
+Criterion name: Self-started fix that got adopted
+What a strong candidate looks like: Same as PM, but 5 requires a self-started initiative that became a platform-level or org-wide standard (adopted beyond their own team, or became a core product/feature). 3 = adopted only within their own team. 1 = only assigned work.
+Weight: 20%
+
+Criterion name: Kills and owns failures in writing
+What a strong candidate looks like: Same as PM, but 5 requires a costly call reversed or killed (feature, integration, vendor, deal) with a written post-mortem that changed how the wider team works. 3 = a smaller failure owned. 1 = only wins.
+Weight: 15%
+
+Criterion name: Owns calls without a layer above
+What a strong candidate looks like: 5 = for 2+ years was the top product/decision owner for an area (no senior PM above) and made consequential, hard-to-reverse calls (architecture, integrations, build vs buy, what not to build) and lived with the outcome. 3 = sole owner of an area for under 2 years, or senior owner with a Head of Product making the big calls. 1 = always had senior PMs/managers making the calls.
+Weight: 30%
+
+Criterion name: Fixes under pressure
+What a strong candidate looks like: Same as PM, but 5 requires leading the response (not just participating) in a high-stakes incident affecting customers or revenue, with a measurable outcome and follow-up actions owned to closure.
+Weight: 15%
