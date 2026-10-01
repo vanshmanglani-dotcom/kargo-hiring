@@ -39,7 +39,8 @@ export async function POST(req) {
     if (dup?.length) await db().from('candidates').delete().in('id', dup.map((d) => d.id)); // re-try failed imports
 
     // 1. Read the CV and split personal details from content (no AI)
-    const raw = await fileToText(file);
+    // strip NUL bytes / lone surrogates that some PDFs contain — Postgres rejects them
+    const raw = (await fileToText(file) || '').replace(/\u0000/g, '').replace(/[\uD800-\uDFFF]/g, '');
     if (!raw || raw.trim().length < 50) throw new Error('Could not read text from this file (scanned image?)');
     const { pii, content } = splitPII(raw, file.name, nameOverride);
 
